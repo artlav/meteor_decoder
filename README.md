@@ -2,13 +2,13 @@ A portable decoder for METEOR M weather satellite LRPT signal
 
 Requires Free Pascal to compile ( [http://www.freepascal.org](http://www.freepascal.org) , or in your Linux distro repositories), no dependencies.
 
-#Build
+## Build
 
 Use ./build_medet.sh, or fpc -CX -XX -O3 -Mdelphi -FUunits -Fualib medet.dpr -FE..
 
 On Windows, edit path to FPC in build.bat, then use build.bat (or the same direct invocation line as above)
 
-#Usage
+## Usage
 
 medet input_file output_name [OPTIONS]  
 
