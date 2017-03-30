@@ -103,6 +103,7 @@ begin
   writeln(' -g x  APID for green (default: ',green_apid,')');
   writeln(' -b x  APID for blue  (default: ',blue_apid,')');
   writeln(' -s    Split image by channels');
+  writeln(' -S    Both split image by channels, and output composite');
   writeln;
   writeln('As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)');
   writeln('Defaults produce 125 image compatible with many tools');
@@ -124,7 +125,8 @@ begin
    if paramstr(i)='-r' then set_apid(0,i);
    if paramstr(i)='-g' then set_apid(1,i);
    if paramstr(i)='-b' then set_apid(2,i);
-   if paramstr(i)='-s' then split_channels:=true;
+   if paramstr(i)='-s' then output_mode:=OUT_SPLIT;
+   if paramstr(i)='-S' then output_mode:=OUT_BOTH;
    i:=i+1;
   end;
  end;

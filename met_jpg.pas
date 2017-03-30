@@ -10,11 +10,16 @@ procedure mj_dump_image(fn:string);
 procedure mj_dec_mcus(p:pbytea;len:integer;apd,pck_cnt,mcu_id:integer;q:byte);    
 procedure mj_init;
 //############################################################################//
+const
+OUT_COMBO=1;
+OUT_SPLIT=2;
+OUT_BOTH =OUT_COMBO or OUT_SPLIT;
+//############################################################################//
 var
 red_apid:integer=68;
 green_apid:integer=65;
 blue_apid:integer=64;
-split_channels:boolean=false;
+output_mode:integer=OUT_COMBO;
 //############################################################################//
 implementation  
 //############################################################################//
@@ -57,8 +62,8 @@ i,j:integer;
 pal:pallette;
 begin
  if length(big_img)=0 then exit;
- if split_channels then begin
 
+ if (output_mode and OUT_SPLIT)<>0 then begin
   for i:=0 to 255 do begin
    pal[i][0]:=i;
    pal[i][1]:=i;
@@ -71,10 +76,9 @@ begin
    for i:=0 to length(small_img)-1 do small_img[i]:=big_img[i][j];
    storebmp8(fn+'_'+stri(j)+'.bmp',@small_img[0],8*mcu_per_line,cur_y+8,true,false,pal);
   end;
-
- end else begin
-  storebmp32(fn+'.bmp',@big_img[0],8*mcu_per_line,cur_y+8,true,false);
  end;
+
+ if (output_mode and OUT_COMBO)<>0 then storebmp32(fn+'.bmp',@big_img[0],8*mcu_per_line,cur_y+8,true,false);
 end;
 //############################################################################//
 procedure fill_dqt_by_q(const dqt:pinta;q:integer);   
