@@ -4,7 +4,7 @@
 //############################################################################//
 program medet;
 {$ifdef mswindows}{$APPTYPE console}{$endif}
-uses asys,met_to_data,met_jpg,met_packet,tim;
+uses sysutils,asys,met_to_data,met_jpg,met_packet,tim;
 //############################################################################//
 var
 quiet:boolean=false;
@@ -131,6 +131,11 @@ begin
     
  inp:=paramstr(1);
  outp:=paramstr(2);
+ 
+ if not fileexists(inp) then begin
+  writeln('Input file "',inp,'" not found!');
+  exit;
+ end;
 
  process_file(inp,outp);
 end;

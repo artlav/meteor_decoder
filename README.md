@@ -10,7 +10,7 @@ On Windows, edit path to FPC in build.bat, then use build.bat (or the same direc
 
 ## Binaries
 
-Binaries for Windows and Linux are available at [Orbides](http://orbides.org/page.php?id=1023)
+Binaries for Windows, Linux, Raspberry Pi and MacOS X are available at [Orbides](http://orbides.org/page.php?id=1023)
 
 ## Usage
 
