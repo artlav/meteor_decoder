@@ -10,10 +10,12 @@ procedure parse_cvcdu(p:pbytea;len:integer);
 //############################################################################//
 implementation
 //############################################################################//
+const packet_full_mark=2047;
+//############################################################################//
 var
 last_frame:integer=0;
 partial_packet:boolean=false;
-packet_buf:array[0..1023]of byte;
+packet_buf:array[0..2*1024-1]of byte;
 packet_off:integer=0;
 md_debug:boolean=false;
 //############################################################################//
@@ -55,7 +57,7 @@ begin
  ms:=(p[8] shl 24) or (p[9] shl 16) or (p[10] shl 8) or p[11];
  //us:=(p[12] shl 8) or p[13];
 
- if md_debug then writeln('sec=',sec,' (pck: ',len_pck+7:4,'/total: ',len:4,') ms=',ms:8);
+ if md_debug then writeln('sec=',sec,' (pck: ',len_pck+1:4,'/total: ',len:4,') ms=',ms:8);
 
  act_apd(@p[14],len-14,apd,pck_cnt);
 end;
@@ -94,15 +96,23 @@ begin
  hdr_mark:=w shr 11;
  hdr_off:=w and $7FF;
 
- if md_debug then writeln(ver:1,' ',ssid:2,' ',fid:2,' ',frame_cnt:7,' ',hdr_mark:3,' ',hdr_off:3);
+ if md_debug then writeln('ver=',ver:1,' ssid=',ssid:2,' fid=',fid:2,' frame_cnt=',frame_cnt:7,' hdr_mark=',hdr_mark:3,' hdr_off=',hdr_off:3);
+ if (ver=0)or(fid=0) then exit; //Empty packet
 
  data_len:=len-10;
  if frame_cnt=last_frame+1 then begin
-  if partial_packet then begin
-   move(p[10],packet_buf[packet_off],hdr_off);
-   n:=parse_partial(@packet_buf[0],packet_off+hdr_off);
+  if partial_packet then begin  
+   if hdr_off=packet_full_mark then begin      //Packet could be larger than one frame
+    hdr_off:=len-10;
+    move(p[10],packet_buf[packet_off],hdr_off);
+    packet_off:=packet_off+hdr_off;
+   end else begin                              
+    move(p[10],packet_buf[packet_off],hdr_off);
+    n:=parse_partial(@packet_buf[0],packet_off+hdr_off);
+   end;
   end;
  end else begin
+  if hdr_off=packet_full_mark then exit;    //Packet could be larger than one frame
   partial_packet:=false;
   packet_off:=0;
  end;

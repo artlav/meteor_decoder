@@ -98,6 +98,7 @@ begin
   writeln('Options:');
   writeln(' -q    Don''t print verbose info');
   writeln(' -Q    Don''t print anything');
+  writeln(' -d    Print loads of debug info');
   writeln(' -r x  APID for red   (default: ',red_apid,')');
   writeln(' -g x  APID for green (default: ',green_apid,')');
   writeln(' -b x  APID for blue  (default: ',blue_apid,')');
@@ -116,6 +117,7 @@ begin
  if paramcount>2 then begin
   i:=3;
   while i<=paramcount do begin
+   if paramstr(i)='-d' then md_debug:=true;
    if paramstr(i)='-q' then quiet:=true;
    if paramstr(i)='-Q' then begin quiet:=true; print_stats:=false;end;
    if paramstr(i)='-r' then set_apid(0,i);

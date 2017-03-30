@@ -74,6 +74,8 @@ begin
  corr_init(m.c,qword($fca2b63db00d9794));   //sync is $1ACFFC1D,  00011010 11001111 11111100 00011101
  mk_viterbi27(m.v);
  m.pos:=0;
+ m.cpos:=0;
+ m.word:=0;
 end;
 //############################################################################//
 procedure do_full_correlate(var m:mtd_rec;raw,aligned:pbytea);
