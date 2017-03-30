@@ -6,7 +6,14 @@ unit met_packet;
 interface
 uses asys,met_jpg;
 //############################################################################//
-var md_debug:boolean=false;
+var
+md_debug:boolean=false;
+quiet:boolean=false;
+print_stats:boolean=true;
+time_file:boolean=false;
+
+no_time_yet:boolean=true;
+first_time,last_time:integer;
 //############################################################################//  
 procedure parse_cvcdu(p:pbytea;len:integer);
 //############################################################################//
@@ -19,6 +26,25 @@ last_frame:integer=0;
 partial_packet:boolean=false;
 packet_buf:array[0..2*1024-1]of byte;
 packet_off:integer=0;
+//############################################################################//
+procedure parse_70(p:pbytea;len:integer);
+var h,m,s,ms:integer;
+begin
+ h:=p[8];
+ m:=p[9];
+ s:=p[10];
+ ms:=p[11]*4;
+
+ last_time:=h*3600*1000+m*60*1000+s*1000+ms;
+
+ if no_time_yet then begin  
+  no_time_yet:=false;
+  first_time:=last_time;
+ end;
+
+ if not quiet then write('Onboard time: ',trimsl(stri(h),2,'0'),':',trimsl(stri(m),2,'0'),':',trimsl(stri(s),2,'0'),'.',trimsl(stri(ms),3,'0'));
+ if not quiet and md_debug then writeln;
+end;
 //############################################################################//
 procedure act_apd(p:pbytea;len:integer;apd,pck_cnt:integer);
 var mcu_id,scan_hdr,seg_hdr,q:integer;
@@ -60,7 +86,8 @@ begin
 
  if md_debug then writeln('sec=',sec,' (pck: ',len_pck+1:4,'/total: ',len:4,') ms=',ms:8);
 
- act_apd(@p[14],len-14,apd,pck_cnt);
+ if apd=70 then parse_70(@p[14],len-14)
+           else act_apd(@p[14],len-14,apd,pck_cnt);
 end;
 //############################################################################//
 function parse_partial(p:pbytea;len:integer):integer;

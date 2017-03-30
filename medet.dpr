@@ -6,9 +6,36 @@ program medet;
 {$ifdef mswindows}{$APPTYPE console}{$endif}
 uses sysutils,asys,met_to_data,met_jpg,met_packet,tim;
 //############################################################################//
-var
-quiet:boolean=false;
-print_stats:boolean=true;
+procedure print_times(out_name:string);  
+var h,m,s,ms,dh,dm,ds,dms,delta:integer;
+f:text;
+begin
+ if no_time_yet then exit;
+ if last_time<first_time then last_time:=last_time+86400*1000;  //If it crossed midnight
+
+ delta:=last_time-first_time;
+
+ dh:=delta div (3600*1000); delta:=delta-dh*3600*1000;
+ dm:=delta div (60*1000);   delta:=delta-dm*60*1000;
+ ds:=delta div 1000;        delta:=delta-ds*1000;
+ dms:=delta;
+            
+ h:=first_time div (3600*1000); first_time:=first_time-h*3600*1000;
+ m:=first_time div (60*1000);   first_time:=first_time-m*60*1000;
+ s:=first_time div 1000;        first_time:=first_time-s*1000;
+ ms:=first_time;
+
+ if print_stats then writeln('Elapsed time: ',trimsl(stri(dh),2,'0'),':',trimsl(stri(dm),2,'0'),':',trimsl(stri(ds),2,'0'),'.',trimsl(stri(dms),3,'0'));
+
+ if time_file then begin
+  assignfile(f,out_name+'.stat');
+  rewrite(f);
+  writeln(f,trimsl(stri(h),2,'0'),':',trimsl(stri(m),2,'0'),':',trimsl(stri(s),2,'0'),'.',trimsl(stri(ms),3,'0'));
+  writeln(f,trimsl(stri(dh),2,'0'),':',trimsl(stri(dm),2,'0'),':',trimsl(stri(ds),2,'0'),'.',trimsl(stri(dms),3,'0'));
+  writeln(f,'0,1538925');   //WTF?
+  closefile(f);
+ end;
+end;
 //############################################################################//
 procedure process_file(fn,out_name:string);
 var f:file;
@@ -44,27 +71,31 @@ begin
  while m.pos<sz-soft_frame_len do begin
   ok:=mtd_one_frame(m,@raw[0]);
   if ok then begin              
+   if not quiet then write(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
+   if not quiet and md_debug then writeln;
    stdt(dt_proc);
    parse_cvcdu(@m.ecced_data[0],hard_frame_len-4-128);
    stat_proc:=stat_proc+rtdt(dt_proc);
    ok_cnt:=ok_cnt+1;
-   if not quiet then writeln(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync));
+   if not quiet and not md_debug then writeln;
   end else begin
-   if not quiet then writeln(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync));
+   if not quiet then writeln(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
   end;
   total_cnt:=total_cnt+1;
  end;
  stat_total:=rtdt(dt_total);
 
  if print_stats then begin
-  writeln('Total:       ',stat_total/1e6:6:6);
-  writeln('Processing:  ',stat_proc/1e6:6:6);
-  writeln('Correlation: ',stat_corr/1e6:6:6);
-  writeln('Viterbi:     ',stat_vit/1e6:6:6);
-  writeln('ECC:         ',stat_ecc/1e6:6:6);
-  writeln('Remainder:   ',(stat_total-stat_ecc-stat_vit-stat_corr-stat_proc)/1e6:6:6);
-  writeln('Packets:     ',ok_cnt,' / ',total_cnt);
+  writeln('Total:        ',stat_total/1e6:6:6);
+  writeln('Processing:   ',stat_proc/1e6:6:6);
+  writeln('Correlation:  ',stat_corr/1e6:6:6);
+  writeln('Viterbi:      ',stat_vit/1e6:6:6);
+  writeln('ECC:          ',stat_ecc/1e6:6:6);
+  writeln('Remainder:    ',(stat_total-stat_ecc-stat_vit-stat_corr-stat_proc)/1e6:6:6);
+  writeln('Packets:      ',ok_cnt,' / ',total_cnt);
  end;
+
+ print_times(out_name);
 
  freedt(dt_total);
  freedt(dt_proc);
@@ -104,6 +135,7 @@ begin
   writeln(' -b x  APID for blue  (default: ',blue_apid,')');
   writeln(' -s    Split image by channels');
   writeln(' -S    Both split image by channels, and output composite');
+  writeln(' -t    Write stat file with time information');
   writeln;
   writeln('As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)');
   writeln('Defaults produce 125 image compatible with many tools');
@@ -127,6 +159,7 @@ begin
    if paramstr(i)='-b' then set_apid(2,i);
    if paramstr(i)='-s' then output_mode:=OUT_SPLIT;
    if paramstr(i)='-S' then output_mode:=OUT_BOTH;
+   if paramstr(i)='-t' then time_file:=true;
    i:=i+1;
   end;
  end;

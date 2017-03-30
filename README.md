@@ -28,7 +28,8 @@ Options:
 -b x  APID for blue  (default: 64)  
 -s    Split image by channels  
 -S    Both split image by channels, and output composite  
-
+-t    Write stat file with time information  
+ 
 As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)  
 Defaults produce 125 image compatible with many tools  
 Nice false color image is produced with -r 65 -g 65 -b 64  

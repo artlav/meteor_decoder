@@ -81,7 +81,8 @@ gclmagenta:crgba=(255,0,255,255);
 //STRVAL
 function stri(par:int64):string;
 function strhex(bit:dword):string;
-function vali(par:string):int64;
+function vali(par:string):int64;    
+function trimsl(s:string;n:integer;c:char):string;
 //############################################################################//
 implementation
 //############################################################################//
@@ -105,6 +106,7 @@ procedure vfwrite(var f:file;p:pointer;s:integer);begin blockwrite(f,p^,s);end;
 function stri(par:int64):string;begin str(par,result);end;
 function strhex (bit:dword):string;begin result:=inttohex(bit,8);end;
 function vali(par:string):int64;var n:integer;begin val(trim(par),result,n);if n=0 then exit;end;
+function trimsl(s:string;n:integer;c:char):string;begin result:=s;while length(result)<n do result:=c+result;end;
 //############################################################################//
 begin
 end.
