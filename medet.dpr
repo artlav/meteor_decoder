@@ -69,7 +69,7 @@ begin
  freedt(dt_total);
  freedt(dt_proc);
 
- mj_dump_image(out_name+'.bmp');
+ mj_dump_image(out_name);
 end;
 //############################################################################//
 procedure set_apid(n:integer;var i:integer);
@@ -102,6 +102,7 @@ begin
   writeln(' -r x  APID for red   (default: ',red_apid,')');
   writeln(' -g x  APID for green (default: ',green_apid,')');
   writeln(' -b x  APID for blue  (default: ',blue_apid,')');
+  writeln(' -s    Split image by channels');
   writeln;
   writeln('As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)');
   writeln('Defaults produce 125 image compatible with many tools');
@@ -123,6 +124,7 @@ begin
    if paramstr(i)='-r' then set_apid(0,i);
    if paramstr(i)='-g' then set_apid(1,i);
    if paramstr(i)='-b' then set_apid(2,i);
+   if paramstr(i)='-s' then split_channels:=true;
    i:=i+1;
   end;
  end;

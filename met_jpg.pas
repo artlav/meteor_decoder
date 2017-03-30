@@ -14,6 +14,7 @@ var
 red_apid:integer=68;
 green_apid:integer=65;
 blue_apid:integer=64;
+split_channels:boolean=false;
 //############################################################################//
 implementation  
 //############################################################################//
@@ -51,9 +52,29 @@ first_pck:integer=0;
 prev_pck:integer=0;
 //############################################################################//
 procedure mj_dump_image(fn:string);
+var small_img:array of byte;
+i,j:integer;
+pal:pallette;
 begin
  if length(big_img)=0 then exit;
- storebmp32(fn,@big_img[0],8*mcu_per_line,cur_y+8,true,false);
+ if split_channels then begin
+
+  for i:=0 to 255 do begin
+   pal[i][0]:=i;
+   pal[i][1]:=i;
+   pal[i][2]:=i;
+   pal[i][3]:=255;
+  end;
+
+  setlength(small_img,length(big_img));
+  for j:=0 to 2 do begin
+   for i:=0 to length(small_img)-1 do small_img[i]:=big_img[i][j];
+   storebmp8(fn+'_'+stri(j)+'.bmp',@small_img[0],8*mcu_per_line,cur_y+8,true,false,pal);
+  end;
+
+ end else begin
+  storebmp32(fn+'.bmp',@big_img[0],8*mcu_per_line,cur_y+8,true,false);
+ end;
 end;
 //############################################################################//
 procedure fill_dqt_by_q(const dqt:pinta;q:integer);   

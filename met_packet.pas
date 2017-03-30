@@ -4,7 +4,9 @@
 //############################################################################//
 unit met_packet;
 interface
-uses asys,met_jpg;  
+uses asys,met_jpg;
+//############################################################################//
+var md_debug:boolean=false;
 //############################################################################//  
 procedure parse_cvcdu(p:pbytea;len:integer);
 //############################################################################//
@@ -17,7 +19,6 @@ last_frame:integer=0;
 partial_packet:boolean=false;
 packet_buf:array[0..2*1024-1]of byte;
 packet_off:integer=0;
-md_debug:boolean=false;
 //############################################################################//
 procedure act_apd(p:pbytea;len:integer;apd,pck_cnt:integer);
 var mcu_id,scan_hdr,seg_hdr,q:integer;

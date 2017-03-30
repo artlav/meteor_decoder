@@ -50,6 +50,9 @@ crgba=array[0..3]of byte;
 pcrgba=^crgba;   
 bcrgba=array[0..1000000]of crgba;
 pbcrgba=^bcrgba;
+
+pallette=array[0..255]of crgba;
+ppallette=^pallette;
 //############################################################################//
 const     
 gclaz:crgba=(0,0,0,0);   
@@ -76,6 +79,7 @@ gclcyan:crgba=(255,255,0,255);
 gclmagenta:crgba=(255,0,255,255);
 //############################################################################//
 //STRVAL
+function stri(par:int64):string;
 function strhex(bit:dword):string;
 function vali(par:string):int64;
 //############################################################################//
@@ -98,6 +102,7 @@ procedure vfwrite(var f:file;p:pointer;s:integer);begin blockwrite(f,p^,s);end;
 {$endif}   
 //############################################################################//
 //STRVAL
+function stri(par:int64):string;begin str(par,result);end;
 function strhex (bit:dword):string;begin result:=inttohex(bit,8);end;
 function vali(par:string):int64;var n:integer;begin val(trim(par),result,n);if n=0 then exit;end;
 //############################################################################//

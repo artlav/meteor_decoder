@@ -25,7 +25,8 @@ bmp_infohdr=packed record
 end;
 //############################################################################//
 procedure make_bmp_headers(xr,yr,bpp:integer;out fh:bmp_filehdr;out ih:bmp_infohdr);
-function  storebmp32(fn:string;p:pointer;xr,yr:integer;rev,bgr:boolean):boolean;
+function  storebmp32(fn:string;p:pointer;xr,yr:integer;rev,bgr:boolean):boolean;      
+function  storebmp8 (fn:string;p:pointer;xr,yr:integer;rev,bgr:boolean;pal:pallette):boolean;
 //############################################################################//
 implementation     
 //############################################################################//
@@ -104,7 +105,49 @@ begin
  end;
  vfclose(f);
  result:=true;
-end;    
+end;
+//############################################################################//
+function storebmp8(fn:string;p:pointer;xr,yr:integer;rev,bgr:boolean;pal:pallette):boolean;
+var f:vfile;
+fh:bmp_filehdr;
+ih:bmp_infohdr;
+pcnt,i:integer;
+cl:byte;
+pad:dword;
+begin
+ result:=false;
+ if vfopen(f,fn,2)<>VFERR_OK then exit;
+
+ pad:=0;
+ pcnt:=0;
+ if (xr mod 4)<>0 then pcnt:=4-(xr mod 4);
+ make_bmp_headers(xr,yr,8,fh,ih);
+
+ vfwrite(f,@fh,sizeof(Fh));
+ vfwrite(f,@ih,sizeof(Ih));
+
+ if bgr then for i:=0 to 255 do begin
+  cl:=pal[i][0];
+  pal[i][0]:=pal[i][2];
+  pal[i][2]:=cl;
+ end;
+
+ vfwrite(f,@pal,1024);
+ if not rev then begin
+  for i:=0 to yr-1 do begin
+   vfwrite(f,pointer(intptr(p)+intptr(i*xr)),xr);
+   if pcnt<>0 then vfwrite(f,@pad,pcnt);
+  end;
+ end else begin
+  for i:=yr-1 downto 0 do begin
+   vfwrite(f,@pbytea(p)[i*xr],xr);
+   if pcnt<>0 then vfwrite(f,@pad,pcnt);
+  end;
+ end;
+
+ vfclose(f);
+ result:=true;
+end;
 //############################################################################//
 function storebmp32(fn:string;p:pointer;xr,yr:integer;rev,bgr:boolean):boolean;
 begin  
