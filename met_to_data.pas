@@ -4,7 +4,7 @@
 //############################################################################//
 unit met_to_data;
 interface
-uses asys,ecc,correlator,viterbi27,tim;
+uses asys,ecc,correlator,viterbi27,bitop,tim;
 //############################################################################//
 const
 hard_frame_len=1024;
@@ -120,9 +120,15 @@ begin
  vit_decode(m.v,aligned,@decoded[0]);  
  stat_vit:=stat_vit+rtdt(dt_data);
 
-
  m.last_sync:=pdword(@decoded[0])^;
  m.sig_q:=round(100-(vit_get_percent_BER(m.v)*10));
+
+ //Curiously enough, you can flip all bits in a packet and get a correct ECC anyway.
+ //Check for that case
+ if count_bits(m.last_sync xor $E20330E5)<count_bits(m.last_sync xor $1DFCCF1A) then begin
+  for j:=0 to hard_frame_len-1 do decoded[j]:=decoded[j] xor $FFFFFFFF;
+  m.last_sync:=pdword(@decoded[0])^;
+ end;
 
  stdt(dt_data);
  for j:=0 to hard_frame_len-4-1 do decoded[4+j]:=decoded[4+j] xor prand[j mod 255];
