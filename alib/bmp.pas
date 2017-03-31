@@ -5,7 +5,9 @@
 {$ifdef FPC}{$MODE delphi}{$endif}
 unit bmp;
 interface
-uses asys;      
+uses asys;
+//############################################################################//
+const default_bmp_dpi=96;
 //############################################################################//
 type
 bmp_filehdr=packed record
@@ -42,9 +44,11 @@ begin
  ih.hei:=yr;  
  ih.size:=sizeof(ih); 
  ih.planes:=1; 
- ih.compression:=0; 
- ih.xpels_per_meter:=1000; 
- ih.ypels_per_meter:=1000; 
+ ih.compression:=0;
+
+ //LRPT_places is confused by this field
+ ih.xpels_per_meter:=0; //round((default_bmp_dpi*2.54*xr)/100);    //DPI
+ ih.ypels_per_meter:=ih.xpels_per_meter;
  ih.clr_used:=0; 
  ih.clr_important:=0; 
  

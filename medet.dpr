@@ -30,9 +30,12 @@ begin
  if time_file then begin
   assignfile(f,out_name+'.stat');
   rewrite(f);
-  writeln(f,trimsl(stri(h),2,'0'),':',trimsl(stri(m),2,'0'),':',trimsl(stri(s),2,'0'),'.',trimsl(stri(ms),3,'0'));
-  writeln(f,trimsl(stri(dh),2,'0'),':',trimsl(stri(dm),2,'0'),':',trimsl(stri(ds),2,'0'),'.',trimsl(stri(dms),3,'0'));
-  writeln(f,'0,1538925');   //WTF?
+
+  //LRPT_places needs windows line endings
+  write(f,trimsl(stri( h),2,'0'),':',trimsl(stri( m),2,'0'),':',trimsl(stri( s),2,'0'),'.',trimsl(stri( ms),3,'0')+#$0D#$0A);
+  write(f,trimsl(stri(dh),2,'0'),':',trimsl(stri(dm),2,'0'),':',trimsl(stri(ds),2,'0'),'.',trimsl(stri(dms),3,'0')+#$0D#$0A);
+  write(f,'0,1538925'+#$0D#$0A);   //WTF? Appears irrelevant
+
   closefile(f);
  end;
 end;
