@@ -4,7 +4,7 @@
 //############################################################################//
 program medet;
 {$ifdef mswindows}{$APPTYPE console}{$endif}
-uses sysutils,asys,met_to_data,met_jpg,met_packet,tim;
+uses sysutils,asys,met_to_data,met_jpg,met_packet,tim,correlator,viterbi27,ecc;
 //############################################################################//
 procedure print_times(out_name:string);  
 var h,m,s,ms,dh,dm,ds,dms,delta:integer;
@@ -40,10 +40,25 @@ begin
  end;
 end;
 //############################################################################//
-procedure process_file(fn,out_name:string);
+procedure recreate_packet(var m:mtd_rec;pck,hard:pbytea;var hard_pos:integer);
+var raw:array[0..frame_bits*2-1]of byte;
+input:array[0..hard_frame_len-1]of byte;
+i:integer;
+begin
+ move(pck[0],input[4],hard_frame_len-4);
+ pdword(@input[0])^:=$1DFCCF1A;
+ for i:=0 to hard_frame_len-4-1 do input[4+i]:=input[4+i] xor prand[i mod 255];
+
+ vit_conv_encode(m.v,@input[0],@raw[0]);
+
+ soft_to_hard(@raw[0],@hard[hard_pos],soft_frame_len);
+ hard_pos:=hard_pos+2*hard_frame_len;
+end;
+//############################################################################//
+procedure process_file(fn,out_name:string;do_hard,make_hard:boolean);
 var f:file;
-sz:integer;
-raw:array of byte;
+sz,hard_pos:integer;
+hard,raw:array of byte;
 m:mtd_rec;
 ok:boolean;
 dt_total,dt_proc:integer;
@@ -56,8 +71,18 @@ begin
  assignfile(f,fn);
  reset(f,1);
  sz:=filesize(f);
- setlength(raw,sz);
- blockread(f,raw[0],sz);
+ if do_hard then begin
+  setlength(hard,sz);
+  blockread(f,hard[0],sz);
+
+  setlength(raw,sz*8);
+  hard_to_soft(@hard[0],@raw[0],sz);
+  setlength(hard,0);
+  sz:=sz*8;
+ end else begin
+  setlength(raw,sz);
+  blockread(f,raw[0],sz);
+ end;
  closefile(f);
 
  dt_total:=getdt;
@@ -69,11 +94,17 @@ begin
  ok_cnt:=0;
  total_cnt:=0;
 
+ if make_hard then begin
+  setlength(hard,sz);
+  hard_pos:=0;
+ end;
+
  m.pos:=0;
  stdt(dt_total);
  while m.pos<sz-soft_frame_len do begin
   ok:=mtd_one_frame(m,@raw[0]);
-  if ok then begin              
+  if ok then begin
+   if make_hard then recreate_packet(m,@m.ecced_data[0],@hard[0],hard_pos);
    if not quiet then write(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
    if not quiet and md_debug then writeln;
    stdt(dt_proc);
@@ -104,6 +135,13 @@ begin
  freedt(dt_proc);
 
  mj_dump_image(out_name);
+
+ if make_hard and (hard_pos<>0) then begin
+  assignfile(f,out_name+'.hard');
+  rewrite(f,1);
+  blockwrite(f,hard[0],hard_pos);
+  closefile(f);
+ end;
 end;
 //############################################################################//
 procedure set_apid(n:integer;var i:integer);
@@ -122,14 +160,19 @@ end;
 procedure main;
 var inp,outp:string;
 i:integer;
+do_hard,make_hard:boolean;
 begin
+ do_hard:=false;
+ make_hard:=false;
  if paramcount<2 then begin
   writeln('medet input_file output_name [OPTIONS]'); 
   writeln;
-  writeln('Expects 8 bit signed soft QPSK input');
+  writeln('Expects 8 bit signed soft QPSK or 1 bit hard QPSK input');
   writeln('Image would be written to output_name.bmp');
   writeln;
   writeln('Options:');
+  writeln(' -h    Use hard samples (default - 8 bit soft)');
+  writeln(' -ch   Make hard samples (as decoded)');
   writeln(' -q    Don''t print verbose info');
   writeln(' -Q    Don''t print anything');
   writeln(' -d    Print loads of debug info');
@@ -154,6 +197,8 @@ begin
  if paramcount>2 then begin
   i:=3;
   while i<=paramcount do begin
+   if paramstr(i)='-h' then do_hard:=true;
+   if paramstr(i)='-ch' then make_hard:=true;
    if paramstr(i)='-d' then md_debug:=true;
    if paramstr(i)='-q' then quiet:=true;
    if paramstr(i)='-Q' then begin quiet:=true; print_stats:=false;end;
@@ -175,7 +220,7 @@ begin
   exit;
  end;
 
- process_file(inp,outp);
+ process_file(inp,outp,do_hard,make_hard);
 end;
 //############################################################################//
 begin

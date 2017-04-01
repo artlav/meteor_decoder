@@ -52,6 +52,7 @@ end;
 //############################################################################//
 procedure mk_viterbi27(out v:viterbi27_rec);
 procedure vit_decode(var v:viterbi27_rec;input,output:pbytea);
+procedure vit_conv_encode(var v:viterbi27_rec;input,output:pbytea);
 function vit_get_percent_BER(const v:viterbi27_rec):single;
 //############################################################################//
 implementation

@@ -16,10 +16,12 @@ Binaries for Windows, Linux, Raspberry Pi and MacOS X are available at [Orbides]
 
 medet input_file output_name [OPTIONS]  
 
-Expects 8 bit signed soft QPSK input  
+Expects 8 bit signed soft QPSK or 1 bit hard QPSK input  
 Image would be written to output_name.bmp
   
 Options:  
+-h    Use hard samples (default - 8 bit soft)  
+-ch   Make hard samples (as decoded)  
 -q    Don't print verbose info  
 -Q    Don't print anything  
 -d    Print loads of debug info  

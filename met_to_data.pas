@@ -76,6 +76,7 @@ begin
  m.pos:=0;
  m.cpos:=0;
  m.word:=0;
+ m.corr:=64;
 end;
 //############################################################################//
 procedure do_full_correlate(var m:mtd_rec;raw,aligned:pbytea);
