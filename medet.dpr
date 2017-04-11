@@ -128,7 +128,7 @@ begin
  total_cnt:=0;
 
  if conv_mode<>CONV_NONE then begin
-  setlength(hard,sz);
+  if inp_mode=INP_DEC then setlength(hard,3*sz*8) else setlength(hard,sz);
   hard_pos:=0;
  end;
 
