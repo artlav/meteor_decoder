@@ -69,13 +69,13 @@ begin
 end;
 //############################################################################//
 function bio_peek_n_bits(var b:bit_io_rec;const n:integer):dword;
-var bit:byte;
-i:integer;
+var bit,i,p:integer;
 begin
  result:=0;
  for i:=0 to n-1 do begin
-  bit:=(b.p[(b.pos+i) shr 3] shr (7-((b.pos+i) mod 8))) and 1;
-  result:=(result shl 1)or bit;
+  p:=b.pos+i;
+  bit:=(b.p[p shr 3] shr (7-(p and 7))) and 1;
+  result:=(result shl 1) or bit;
  end;
 end;
 //############################################################################//

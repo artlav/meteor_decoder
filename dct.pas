@@ -6,8 +6,8 @@ unit dct;
 interface
 uses asys;
 //############################################################################//
-procedure flt_dct_8x8(res,inp:psinglea);
-procedure flt_idct_8x8(res,inp:psinglea);
+procedure flt_dct_8x8(const res,inp:psinglea);
+procedure flt_idct_8x8(const res,inp:psinglea);
 //############################################################################//
 implementation
 //############################################################################//
@@ -24,7 +24,7 @@ begin
  for x:=0 to 7 do if x=0 then alpha[x]:=1/sqrt(2) else alpha[x]:=1;
 end;
 //############################################################################//
-procedure flt_dct_8x8(res,inp:psinglea);
+procedure flt_dct_8x8(const res,inp:psinglea);
 var x,y,u,v:integer;
 s:single;
 begin
@@ -37,7 +37,7 @@ begin
  end;
 end;
 //############################################################################//
-procedure flt_idct_8x8(res,inp:psinglea);
+procedure flt_idct_8x8(const res,inp:psinglea);
 var x,y,u:integer;
 s,cxu:single;
 begin
