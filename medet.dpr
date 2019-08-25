@@ -1,5 +1,5 @@
 //############################################################################//
-//Made in 2017 by Artyom Litvinovich
+//Made in 2017-2019 by Artyom Litvinovich
 //Meteor decoder
 //############################################################################//
 program medet;
@@ -16,6 +16,8 @@ CONV_HARD=1;
 CONV_DEC=2;
 //############################################################################//
 ansi_back_to_start=#27'[2K'#27'[1G';
+//############################################################################//
+var isqrt_tab:array[0..32768]of shortint;
 //############################################################################//
 procedure print_times(out_name:string);
 var h,m,s,ms,dh,dm,ds,dms,delta:integer;
@@ -87,7 +89,39 @@ begin
  stat_proc:=stat_proc+rtdt(dt_proc);
 end;
 //############################################################################//
-procedure process_file(fn,out_name:string;inp_mode,conv_mode:integer);
+function mean(const cur,prev:integer):integer;
+var v:integer;
+begin
+ result:=0;
+ v:=cur*prev;
+ if (v>32768)or(v<-32768) then exit;
+ if v>=0 then result:=isqrt_tab[v] else result:=-isqrt_tab[-v];
+end;
+//############################################################################//
+procedure de_diffcode(raw:pshortinta;sz:integer);
+var i,pa,pb,a,b:integer;
+begin
+ if sz<2 then exit;
+
+ //Using a lookup table due to a lack of integer sqrt.
+ //Should preserve the sanity of FPU-less devices.
+ for i:=0 to 32768 do isqrt_tab[i]:=round(sqrt(i));
+
+ pa:=raw[0];
+ pb:=raw[1];
+ raw[0]:=0;
+ raw[1]:=0;
+ for i:=1 to sz div 2-1 do begin
+  a:=raw[i*2+0];
+  b:=raw[i*2+1];
+  raw[i*2+0]:=mean( a,pa);
+  raw[i*2+1]:=mean(-b,pb);
+  pa:=a;
+  pb:=b;
+ end;
+end;
+//############################################################################//
+procedure process_file(fn,out_name:string;inp_mode,conv_mode:integer;dediff:boolean);
 var f:file;
 sz,hard_pos:integer;
 hard,raw:array of byte;
@@ -157,6 +191,10 @@ begin
    if not quiet and not md_debug then writeln;
   end;
  end else begin
+  if dediff then begin
+   if not quiet then writeln('Dediffing...');
+   de_diffcode(@raw[0],sz);
+  end;
   while m.pos<sz-soft_frame_len do begin
    ok:=mtd_one_frame(m,@raw[0]);
    if ok then begin
@@ -232,7 +270,9 @@ end;
 procedure main;
 var inp,outp,s:string;
 i,inp_mode,conv_mode:integer;
+dediff:boolean;
 begin
+ dediff:=false;
  inp_mode:=INP_SOFT;
  conv_mode:=CONV_NONE;
  {$ifdef mswindows}ansi:=false;{$endif}
@@ -246,6 +286,9 @@ begin
   writeln(' -soft      Use 8 bit soft samples (default)');
   writeln(' -h -hard   Use hard samples');
   writeln(' -d -dump   Use decoded dump');
+  writeln;
+  writeln('Process:');
+  writeln(' -diff      Diff coding (for Meteor M2-2)');
   writeln;
   writeln('Output:');
   writeln(' -ch        Make hard samples (as decoded)');
@@ -281,7 +324,9 @@ begin
   i:=3;
   while i<=paramcount do begin
    s:=paramstr(i);
-        if (s='-h')or(s='-hard') then inp_mode:=INP_HARD
+        if s='-diff' then dediff:=true
+
+   else if (s='-h')or(s='-hard') then inp_mode:=INP_HARD
    else if s='-soft' then inp_mode:=INP_SOFT
    else if s='-d' then inp_mode:=INP_DEC
 
@@ -311,7 +356,7 @@ begin
   exit;
  end;
 
- process_file(inp,outp,inp_mode,conv_mode);
+ process_file(inp,outp,inp_mode,conv_mode,dediff);
 end;
 //############################################################################//
 begin

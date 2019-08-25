@@ -25,7 +25,6 @@ Input:
  -d -dump   Use decoded dump  
   
 Process:  
- -int       Deinterleave (for 80k signal, i.e. Meteor M2-2, default - 72k)  
  -diff      Diff coding (for Meteor M2-2)  
   
 Output:  
@@ -40,13 +39,13 @@ Output:
  -t         Write stat file with time information  
   
 Print:  
- -q         Don''t print verbose info  
- -Q         Don''t print anything  
+ -q         Don't print verbose info  
+ -Q         Don't print anything  
  -p         Print loads of debug info  
- -na        Don''t compress the debug output to a single line  
+ -na        Don't compress the debug output to a single line  
   
 As of August 2019, N2 and N2-2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 66 (10.5-11.5)  
 As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)  
 Defaults produce 125 image compatible with many tools  
 Nice false color image is produced with -r 65 -g 65 -b 64  
-Decoded dump is 9 times smaller than the raw signal, and can be re-decoded 20x as fast, so it''s a good format to store images and play with channels  
+Decoded dump is 9 times smaller than the raw signal, and can be re-decoded 20x as fast, so it's a good format to store images and play with channels  
