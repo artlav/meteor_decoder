@@ -88,7 +88,7 @@ begin
 
  if m.corr<min_correlation then begin
   m.prev_pos:=m.pos;
-  writeln('Not even ',min_correlation,' bits found!.');
+  //writeln('Not even ',min_correlation,' bits found!.');
   move(raw[m.pos],aligned[0],soft_frame_len);
   m.pos:=m.pos+soft_frame_len div 4;
  end else begin

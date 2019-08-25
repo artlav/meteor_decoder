@@ -25,6 +25,7 @@ Input:
  -d -dump   Use decoded dump  
   
 Process:  
+ -int       Deinterleave (for 80k signal, i.e. Meteor M2-2, default - 72k)  
  -diff      Diff coding (for Meteor M2-2)  
   
 Output:  

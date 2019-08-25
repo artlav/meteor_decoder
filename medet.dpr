@@ -17,6 +17,11 @@ CONV_DEC=2;
 //############################################################################//
 ansi_back_to_start=#27'[2K'#27'[1G';
 //############################################################################//
+//Interleaver parameters
+inter_branches=36;
+inter_delay=2048;
+inter_base_len=inter_branches*inter_delay;
+//############################################################################//
 var isqrt_tab:array[0..32768]of shortint;
 //############################################################################//
 procedure print_times(out_name:string);
@@ -89,6 +94,100 @@ begin
  stat_proc:=stat_proc+rtdt(dt_proc);
 end;
 //############################################################################//
+//Exact order does not matter, it's not used anywhere else.
+function byte_at_off(data:pbytea):byte;
+var b:integer;
+begin
+ result:=0;
+ for b:=0 to 7 do result:=result or (ord((data[b])<128) shl b);
+end;
+//############################################################################//
+//The sync word could be in any of 8 different orientations,
+//so we will just look for a repeating bit pattern the right distance apart
+function find_sync(data:pbytea;sz,step,depth:integer;out off:integer;out sync:byte):boolean;
+var i,j:integer;
+begin
+ result:=false;
+ off:=0;
+ for i:=0 to sz-1-step*depth do begin
+  sync:=byte_at_off(@data[i]);
+  result:=true;
+  for j:=1 to depth do if sync<>byte_at_off(@data[i+j*step]) then begin result:=false;break;end;
+  if result then begin off:=i; exit;end;
+ end;
+end;
+//############################################################################//
+//80k stream: 00100111 36 bits 36 bits 00100111 36 bits 36 bits 00100111 ...
+procedure resync_stream(raw:pbytea;raw_sz:integer;out sz:integer);
+var src:array of byte;
+pos,i,off:integer;
+sync:byte;
+ok:boolean;
+begin
+ setlength(src,raw_sz);
+ move(raw[0],src[0],raw_sz);
+
+ sz:=0;
+ pos:=0;
+ while pos<raw_sz-80*4 do begin
+  if not find_sync(@src[pos],80*5,80,4,off,sync) then begin
+   pos:=pos+80*3;
+   continue;
+  end;
+  if not quiet then begin
+   if ansi then write(ansi_back_to_start);
+   write(' (',(pos/raw_sz)*100:6:2,'%) sync: Found sync at ',pos,' ',sync);
+   if not ansi then writeln;
+  end;
+
+  pos:=pos+off;
+  while pos<raw_sz-80 do begin
+   //Look ahead to prevent it losing sync on weak signal
+   ok:=false;
+   for i:=0 to 127 do if pos+i*80<raw_sz-80 then if byte_at_off(@src[pos+i*80])=sync then begin ok:=true;break;end;
+   if not ok then break;
+
+   move(src[pos+8],raw[sz],72);
+   pos:=pos+80;
+   sz:=sz+72;
+  end;
+  if not quiet then begin
+   if ansi then write(ansi_back_to_start);
+   write(' (',(pos/raw_sz)*100:6:2,'%) sync: Lost sync at ',pos);
+   if not ansi then writeln;
+  end;
+ end;
+
+ if not quiet then begin
+  if ansi then writeln;
+  writeln('sync: ',sz,' / ',raw_sz*72 div 80);
+ end;
+end;
+//############################################################################//
+// https://en.wikipedia.org/wiki/Burst_error-correcting_code#Convolutional_interleaver
+procedure deint_block(src,dst:pbytea;sz:integer);
+var i,pos:int64;
+begin
+ for i:=0 to sz-1 do begin
+  pos:=i+(inter_branches-1)*inter_delay-(i mod inter_branches)*inter_base_len;
+  //Offset it by half a message, to capture both leading and trailing fuzz
+  pos:=pos+(inter_branches div 2)*inter_base_len;
+  if (pos>=0)and(pos<sz) then dst[pos]:=src[i];
+ end;
+end;
+//############################################################################//
+procedure deinterleave(raw:pbytea;raw_sz:integer;out sz:integer);
+var src:array of byte;
+begin
+ resync_stream(raw,raw_sz,sz);
+
+ setlength(src,sz);
+ move(raw[0],src[0],sz);
+ fillchar(raw[0],sz,0);
+
+ deint_block(@src[0],@raw[0],sz);
+end;
+//############################################################################//
 function mean(const cur,prev:integer):integer;
 var v:integer;
 begin
@@ -121,7 +220,7 @@ begin
  end;
 end;
 //############################################################################//
-procedure process_file(fn,out_name:string;inp_mode,conv_mode:integer;dediff:boolean);
+procedure process_file(fn,out_name:string;inp_mode,conv_mode:integer;deint,dediff:boolean);
 var f:file;
 sz,hard_pos:integer;
 hard,raw:array of byte;
@@ -191,6 +290,10 @@ begin
    if not quiet and not md_debug then writeln;
   end;
  end else begin
+  if deint then begin
+   if not quiet then writeln('Deinterleaving...');
+   deinterleave(@raw[0],sz,sz);
+  end;
   if dediff then begin
    if not quiet then writeln('Dediffing...');
    de_diffcode(@raw[0],sz);
@@ -270,8 +373,9 @@ end;
 procedure main;
 var inp,outp,s:string;
 i,inp_mode,conv_mode:integer;
-dediff:boolean;
+deint,dediff:boolean;
 begin
+ deint:=false;
  dediff:=false;
  inp_mode:=INP_SOFT;
  conv_mode:=CONV_NONE;
@@ -279,6 +383,7 @@ begin
  if paramcount<2 then begin
   writeln('medet input_file output_name [OPTIONS]');
   writeln;
+  writeln('Version 20190825-0');
   writeln('Expects 8 bit signed soft samples, 1 bit hard samples or decoded dump input');
   writeln('Image would be written to output_name.bmp');
   writeln;
@@ -288,6 +393,7 @@ begin
   writeln(' -d -dump   Use decoded dump');
   writeln;
   writeln('Process:');
+  writeln(' -int       Deinterleave (for 80k signal, i.e. Meteor M2-2, default - 72k)');
   writeln(' -diff      Diff coding (for Meteor M2-2)');
   writeln;
   writeln('Output:');
@@ -324,7 +430,8 @@ begin
   i:=3;
   while i<=paramcount do begin
    s:=paramstr(i);
-        if s='-diff' then dediff:=true
+        if s='-int' then deint:=true
+   else if s='-diff' then dediff:=true
 
    else if (s='-h')or(s='-hard') then inp_mode:=INP_HARD
    else if s='-soft' then inp_mode:=INP_SOFT
@@ -356,7 +463,7 @@ begin
   exit;
  end;
 
- process_file(inp,outp,inp_mode,conv_mode,dediff);
+ process_file(inp,outp,inp_mode,conv_mode,deint,dediff);
 end;
 //############################################################################//
 begin
