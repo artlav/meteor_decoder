@@ -16,7 +16,7 @@ distance_max=65535;
 frame_bits=1024*8;
 num_states=128;
 high_bit=64;
-encode_len=2*(frame_bits+8);    
+encode_len=2*(frame_bits+8);
 num_iter=high_bit shl 1;
 
 min_traceback=5*7;
@@ -208,7 +208,7 @@ begin
  end;
 
  for i:=6 to frame_bits-7 do begin
-  for j:=0 to 3 do v.distances[j]:=v.dist_table[j][pword(@soft[i*2])^];   
+  for j:=0 to 3 do v.distances[j]:=v.dist_table[j][pword(@soft[i*2])^];
   history:=@v.history[v.hist_index];
 
   pair_lookup_fill_distance(v);
@@ -342,7 +342,7 @@ b:bit_io_rec;
 begin
  b.p:=input;
  b.pos:=0;
-      
+
  sh:=0;
  for i:=0 to frame_bits-1 do begin
   sh:=((sh shl 1) or bio_fetch_n_bits(b,1)) and $7F;
@@ -351,7 +351,7 @@ begin
  end;
 end;
 //############################################################################//
-procedure vit_decode(var v:viterbi27_rec;input,output:pbytea);    
+procedure vit_decode(var v:viterbi27_rec;input,output:pbytea);
 var i:integer;
 corrected:array[0..frame_bits*2-1]of byte;
 begin

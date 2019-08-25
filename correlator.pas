@@ -1,6 +1,6 @@
 //############################################################################//
 //Made in 2017 by Artyom Litvinovich
-//medet: Find a pattern i the soft samples
+//medet: Find a pattern in the soft samples
 //############################################################################//
 unit correlator;
 interface
@@ -15,16 +15,16 @@ type
 corr_rec=record
  patts:array[0..pattern_size-1]of array[0..pattern_cnt-1]of byte;
  correlation,tmp_corr,position:array[0..pattern_cnt-1]of integer;
-end;      
+end;
 //############################################################################//
-procedure fix_packet(data:pointer;len:integer;shift:integer);  
+procedure fix_packet(data:pointer;len:integer;shift:integer);
 procedure hard_packet(data:pointer;len:integer);
 
 procedure soft_to_hard(input,output:pointer;soft_len:integer);
 procedure hard_to_soft(input,output:pointer;hard_len:integer);
 
 function hard_correlate(const d,w:byte):integer;
-function corr_correlate(var c:corr_rec;data:pbytea;len:dword):integer; 
+function corr_correlate(var c:corr_rec;data:pbytea;len:dword):integer;
 procedure corr_init(out c:corr_rec;q:qword);
 //############################################################################//
 implementation

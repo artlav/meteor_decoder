@@ -1,7 +1,7 @@
-//############################################################################//  
+//############################################################################//
 //Made in 2003-2010 by Artyom Litvinovich
 //
-//Reed-Solomon (255,223,8) encoding/decoding 
+//Reed-Solomon (255,223,8) encoding/decoding
 //Fixes 16 bytes of errors in 255 bytes block (223 of them are data)
 //Typical use is 128 byte block, with 96 bytes of data
 //############################################################################//
@@ -10,7 +10,7 @@ unit ecc;
 interface
 uses asys;
 //############################################################################//
-procedure ecc_encode(idata:pointer;pad:integer);   
+procedure ecc_encode(idata:pointer;pad:integer);
 function  ecc_decode(idata:pointer;pad:integer):integer;
 
 procedure ecc_deinterleave(data,output:pbytea;pos,n:integer);
@@ -20,7 +20,7 @@ procedure ecc_interleave(data,output:pbytea;pos,n:integer);
 //############################################################################//
 implementation
 //############################################################################//
-const 
+const
 alpha:array[0..255]of byte=(
  $01,$02,$04,$08,$10,$20,$40,$80,
  $87,$89,$95,$ad,$dd,$3d,$7a,$f4,
@@ -112,7 +112,7 @@ begin
   if feedback<>255 then begin
    for j:=1 to 32-1 do bb[j]:=bb[j] xor alpha[(feedback+poly[32-j]) mod 255];
   end;
-   
+
   move(bb[1],bb[0],31);
   if feedback<>255 then bb[31]:=alpha[(feedback+poly[0]) mod 255]
                    else bb[31]:=0;
@@ -127,22 +127,22 @@ var i,j,r,k,deg_lambda,el,deg_omega:integer;
 syn_error:integer;
 q,tmp,num1,num2,den,discr_r:byte;
 lambda,b,reg,t,omega:array[0..32]of byte;
-root,s,loc:array[0..31]of byte;   
+root,s,loc:array[0..31]of byte;
 data:pbytea;
-begin  
+begin
  data:=idata;
- 
+
  for i:=0 to 32-1 do s[i]:=data[0];
  for j:=1 to 255-pad-1 do for i:=0 to 32-1 do if s[i]=0 then s[i]:=data[j] else s[i]:=data[j] xor alpha[(idx[s[i]]+(112+i)*11)mod 255];
  syn_error:=0;
- 
- for i:=0 to 32-1 do begin 
+
+ for i:=0 to 32-1 do begin
   syn_error:=syn_error or s[i];
   s[i]:=idx[s[i]];
  end;
- 
+
  if syn_error=0 then begin result:=0;exit; end;
- 
+
  fillchar(lambda[1],32,0);
  lambda[0]:=1;
 
@@ -169,7 +169,7 @@ begin
     for i:=0 to 32-1 do begin
      if lambda[i]=0 then b[i]:=255 else b[i]:=byte((idx[lambda[i]]-discr_r+255)mod 255);
     end;
-   end else begin    
+   end else begin
     move(b[0],b[1],32);
     b[0]:=255;
    end;
@@ -183,10 +183,10 @@ begin
   lambda[i]:=idx[lambda[i]];
   if lambda[i]<>255 then deg_lambda:=i;
  end;
- 
+
  move(lambda[1],reg[1],32);
  result:=0;
- 
+
  i:=1;
  k:=115;
  repeat
@@ -199,7 +199,7 @@ begin
     q:=q xor alpha[reg[j]];
    end;
   end;
-  
+
   if q<>0 then begin i:=i+1;k:=(k+116)mod 255; continue;end;
   root[result]:=i;
   loc[result]:=k;
@@ -208,16 +208,16 @@ begin
 
   i:=i+1;k:=(k+116)mod 255;
  until false;
- 
+
  if deg_lambda<>result then begin result:=-1;exit;end;
- 
+
  deg_omega:=deg_lambda-1;
  for i:=0 to deg_omega do begin
   tmp:=0;
   for j:=i downto 0 do if(s[i-j]<>255)and(lambda[j]<>255)then tmp:=tmp xor alpha[(s[i-j]+lambda[j])mod 255];
   omega[i]:=idx[tmp];
  end;
- 
+
  for j:=result-1 downto 0 do begin
   num1:=0;
   for i:=deg_omega downto 0 do if omega[i]<>255 then num1:=num1 xor alpha[(omega[i]+i*root[j])mod 255];
@@ -231,7 +231,7 @@ begin
    if lambda[i+1]<>255 then den:=den xor alpha[(lambda[i+1]+i*root[j])mod 255];
    i:=i-2;
   until false;
-  
+
   if(num1<>0)and(loc[j]>=pad)then data[loc[j]-pad]:=data[loc[j]-pad] xor alpha[(idx[num1]+idx[num2]+255-idx[den])mod 255];
  end;
 end;
@@ -252,7 +252,7 @@ end;
 procedure ecc_test;
 var ref,blk:array[0..127]of byte;
 i,k:integer;
-begin           
+begin
  randomize;
  for k:=0 to 100-1 do begin
   for i:=0 to 96-1 do begin
@@ -261,9 +261,9 @@ begin
   end;
   ecc_encode(@blk[0],127);
   for i:=0 to random(16) do blk[random(128)]:=random(256);
-  ecc_decode(@blk[0],127);   
+  ecc_decode(@blk[0],127);
   for i:=0 to 96-1 do if blk[i]<>ref[i] then begin writeln('ECC: error ',i);exit;  end;
- end;      
+ end;
  writeln('ECC: ok');
 end;
 {$endif}

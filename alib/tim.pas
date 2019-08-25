@@ -1,9 +1,9 @@
 //############################################################################//
 // Made in 2003-2010 by Artyom Litvinovich
-// AlgorLib: Timer 
+// AlgorLib: Timer
 //############################################################################//
 //FIXME: Is TimeStampToMSecs(DateTimeToTimeStamp(Time))*1000 universal?
-unit tim;   
+unit tim;
 {$ifdef win32}{$define i386}{$endif}
 {$ifdef cpu86}{$define i386}{$endif}
 {$ifdef win32}{$define windows}{$endif}
@@ -24,16 +24,16 @@ interface
 {$ifdef unix}uses sysutils,unix;{$endif}
 //############################################################################//
 procedure stdt(d:integer);
-function rtdt(d:integer):Int64;  
+function rtdt(d:integer):Int64;
 {$ifdef asmdir}function rdtsc:Int64;{$endif}
 function getdt:integer;
 procedure freedt(n:integer);
 //############################################################################//
-implementation    
+implementation
 //############################################################################//
 var dtts:array[0..100]of int64;
 dtused:array[0..100]of boolean;
-{$ifdef windows}frq:int64;{$endif} 
+{$ifdef windows}frq:int64;{$endif}
 {$ifdef ape3}
 dttsf:array[0..100]of double;
 timer_ticks:pinteger;
@@ -82,7 +82,7 @@ begin
  {$ifdef unix}   result:=getuscount-dtts[d];exit;{$endif}
  {$ifdef ape3}   result:=round((timer_ticks^/sethz^-dttsf[d])*1000000);exit;{$endif}
  {$ifdef paser}  result:=nano_time-dtts[d];exit;{$endif}
-end; 
+end;
 //############################################################################//
 function getdt:integer;
 var i:integer;

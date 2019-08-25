@@ -15,7 +15,7 @@ bit_io_rec=record
  cur:byte;
  cur_len:integer;
 end;
-//############################################################################//   
+//############################################################################//
 function count_bits(n:dword):integer;
 
 function bio_peek_n_bits    (var b:bit_io_rec;const n:integer):dword;
@@ -25,7 +25,7 @@ function bio_fetch_n_bits   (var b:bit_io_rec;const n:integer):dword;
 procedure bit_writer_create(var w:bit_io_rec;bytes:pbytea;len:integer);
 procedure bio_write_bitlist_reversed(var w:bit_io_rec;l:pbytea;len:integer);
 //############################################################################//
-implementation        
+implementation
 //############################################################################//
 const bitcnt:array[0..255]of integer=(
  0, 1, 1, 2, 1, 2, 2, 3,
@@ -157,6 +157,6 @@ begin
 end;
 //############################################################################//
 begin
-end. 
+end.
 //############################################################################//
 

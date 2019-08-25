@@ -15,7 +15,9 @@ CONV_NONE=0;
 CONV_HARD=1;
 CONV_DEC=2;
 //############################################################################//
-procedure print_times(out_name:string);  
+ansi_back_to_start=#27'[2K'#27'[1G';
+//############################################################################//
+procedure print_times(out_name:string);
 var h,m,s,ms,dh,dm,ds,dms,delta:integer;
 f:text;
 begin
@@ -28,7 +30,7 @@ begin
  dm:=delta div (60*1000);   delta:=delta-dm*60*1000;
  ds:=delta div 1000;        delta:=delta-ds*1000;
  dms:=delta;
-            
+
  h:=first_time div (3600*1000); first_time:=first_time-h*3600*1000;
  m:=first_time div (60*1000);   first_time:=first_time-m*60*1000;
  s:=first_time div 1000;        first_time:=first_time-s*1000;
@@ -81,7 +83,7 @@ end;
 procedure do_one_frame(var m:mtd_rec;dt_proc:integer;var stat_proc:int64);
 begin
  stdt(dt_proc);
- parse_cvcdu(@m.ecced_data[0],hard_frame_len-4-128);   
+ parse_cvcdu(@m.ecced_data[0],hard_frame_len-4-128);
  stat_proc:=stat_proc+rtdt(dt_proc);
 end;
 //############################################################################//
@@ -94,17 +96,19 @@ ok:boolean;
 dt_total,dt_proc:integer;
 stat_proc,stat_total:int64;
 ok_cnt,total_cnt:integer;
-begin  
+begin
  mj_init;
  mtd_init(m);
 
  assignfile(f,fn);
  reset(f,1);
  sz:=filesize(f);
+ if not quiet then writeln('Reading '+fn+'...');
  if inp_mode=INP_HARD then begin
   setlength(hard,sz);
   blockread(f,hard[0],sz);
 
+  if not quiet then writeln('Parsing hard file...');
   setlength(raw,sz*8);
   hard_to_soft(@hard[0],@raw[0],sz);
   setlength(hard,0);
@@ -119,7 +123,7 @@ begin
  closefile(f);
 
  dt_total:=getdt;
- dt_proc:=getdt;   
+ dt_proc:=getdt;
  stat_corr:=0;
  stat_vit:=0;
  stat_ecc:=0;
@@ -134,7 +138,7 @@ begin
 
  m.pos:=0;
  stdt(dt_total);
- if inp_mode=INP_DEC then begin 
+ if inp_mode=INP_DEC then begin
   while m.pos<=sz-hard_frame_len do begin
    if pdword(@raw[m.pos])^<>$1DFCCF1A then begin
     writeln('Decoded file format error');
@@ -147,7 +151,7 @@ begin
    m.pos:=m.pos+hard_frame_len;
    do_one_conv(m,@hard[0],hard_pos,conv_mode);
    do_one_frame(m,dt_proc,stat_proc);
-   ok_cnt:=ok_cnt+1;  
+   ok_cnt:=ok_cnt+1;
    total_cnt:=total_cnt+1;
 
    if not quiet and not md_debug then writeln;
@@ -156,20 +160,28 @@ begin
   while m.pos<sz-soft_frame_len do begin
    ok:=mtd_one_frame(m,@raw[0]);
    if ok then begin
-    if not quiet then write(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
-    if not quiet and md_debug then writeln;
+    if not quiet then begin
+     if ansi then write(ansi_back_to_start);
+     write(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
+     if md_debug and not ansi then writeln;
+    end;
 
     do_one_conv(m,@hard[0],hard_pos,conv_mode);
     do_one_frame(m,dt_proc,stat_proc);
-    ok_cnt:=ok_cnt+1;  
+    ok_cnt:=ok_cnt+1;
 
-    if not quiet and not md_debug then writeln;
+    if not quiet and not md_debug and not ansi then writeln;
    end else begin
-    if not quiet then writeln(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
+    if not quiet then begin
+     if ansi then write(ansi_back_to_start);
+     write(' pos=',m.prev_pos:8,' (',(m.prev_pos/sz)*100:6:2,'%) (',m.word:2,',',m.cpos:5,',',m.corr:2,') sig=',m.sig_q:5,' rs=(',m.r[0]:2,',',m.r[1]:2,',',m.r[2]:2,',',m.r[3]:2,') ',strhex(m.last_sync),' ');
+     if not ansi then writeln;
+    end;
    end;
    total_cnt:=total_cnt+1;
   end;
  end;
+ if not quiet and ansi then writeln;
 
  stat_total:=rtdt(dt_total);
 
@@ -218,32 +230,41 @@ begin
 end;
 //############################################################################//
 procedure main;
-var inp,outp:string;
+var inp,outp,s:string;
 i,inp_mode,conv_mode:integer;
 begin
  inp_mode:=INP_SOFT;
  conv_mode:=CONV_NONE;
+ {$ifdef mswindows}ansi:=false;{$endif}
  if paramcount<2 then begin
-  writeln('medet input_file output_name [OPTIONS]'); 
+  writeln('medet input_file output_name [OPTIONS]');
   writeln;
-  writeln('Expects 8 bit signed soft QPSK, 1 bit hard QPSK or decoded dump input');
+  writeln('Expects 8 bit signed soft samples, 1 bit hard samples or decoded dump input');
   writeln('Image would be written to output_name.bmp');
   writeln;
-  writeln('Options:');
-  writeln(' -h    Use hard samples (default - 8 bit soft)');  
-  writeln(' -d    Use decoded dump (default - 8 bit soft)');
-  writeln(' -ch   Make hard samples (as decoded)');
-  writeln(' -cd   Make decoded dump');
-  writeln(' -q    Don''t print verbose info');
-  writeln(' -Q    Don''t print anything');
-  writeln(' -p    Print loads of debug info');
-  writeln(' -r x  APID for red   (default: ',red_apid,')');
-  writeln(' -g x  APID for green (default: ',green_apid,')');
-  writeln(' -b x  APID for blue  (default: ',blue_apid,')');
-  writeln(' -s    Split image by channels');
-  writeln(' -S    Both split image by channels, and output composite');
-  writeln(' -t    Write stat file with time information');
+  writeln('Input:');
+  writeln(' -soft      Use 8 bit soft samples (default)');
+  writeln(' -h -hard   Use hard samples');
+  writeln(' -d -dump   Use decoded dump');
   writeln;
+  writeln('Output:');
+  writeln(' -ch        Make hard samples (as decoded)');
+  writeln(' -cd        Make decoded dump');
+  writeln(' -cn        Make image (default)');
+  writeln(' -r x       APID for red   (default: ',red_apid,')');
+  writeln(' -g x       APID for green (default: ',green_apid,')');
+  writeln(' -b x       APID for blue  (default: ',blue_apid,')');
+  writeln(' -s         Split image by channels');
+  writeln(' -S         Both split image by channels, and output composite');
+  writeln(' -t         Write stat file with time information');
+  writeln;
+  writeln('Print:');
+  writeln(' -q         Don''t print verbose info');
+  writeln(' -Q         Don''t print anything');
+  writeln(' -p         Print loads of debug info');
+  {$ifndef mswindows}writeln(' -na        Don''t compress the debug output to a single line');{$endif}
+  writeln;
+  writeln('As of August 2019, N2 and N2-2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 66 (10.5-11.5)');
   writeln('As of March 2017, N2 got APIDs 64 (0.5-0.7), 65 (0.7-1.1) and 68 (10.5-11.5)');
   writeln('Defaults produce 125 image compatible with many tools');
   writeln('Nice false color image is produced with -r 65 -g 65 -b 64');
@@ -259,26 +280,32 @@ begin
  if paramcount>2 then begin
   i:=3;
   while i<=paramcount do begin
-   if paramstr(i)='-h' then inp_mode:=INP_HARD;
-   if paramstr(i)='-d' then inp_mode:=INP_DEC;
-   if paramstr(i)='-ch' then conv_mode:=CONV_HARD;
-   if paramstr(i)='-cd' then conv_mode:=CONV_DEC;
-   if paramstr(i)='-p' then md_debug:=true;
-   if paramstr(i)='-q' then quiet:=true;
-   if paramstr(i)='-Q' then begin quiet:=true; print_stats:=false;end;
-   if paramstr(i)='-r' then set_apid(0,i);
-   if paramstr(i)='-g' then set_apid(1,i);
-   if paramstr(i)='-b' then set_apid(2,i);
-   if paramstr(i)='-s' then output_mode:=OUT_SPLIT;
-   if paramstr(i)='-S' then output_mode:=OUT_BOTH;
-   if paramstr(i)='-t' then time_file:=true;
+   s:=paramstr(i);
+        if (s='-h')or(s='-hard') then inp_mode:=INP_HARD
+   else if s='-soft' then inp_mode:=INP_SOFT
+   else if s='-d' then inp_mode:=INP_DEC
+
+   else if s='-ch' then conv_mode:=CONV_HARD
+   else if s='-cd' then conv_mode:=CONV_DEC
+   else if s='-cn' then conv_mode:=CONV_NONE
+   else if s='-r' then set_apid(0,i)
+   else if s='-g' then set_apid(1,i)
+   else if s='-b' then set_apid(2,i)
+   else if s='-s' then output_mode:=OUT_SPLIT
+   else if s='-S' then output_mode:=OUT_BOTH
+   else if s='-t' then time_file:=true
+
+   else if s='-p' then md_debug:=true
+   else if s='-q' then quiet:=true
+   else if s='-Q' then begin quiet:=true; print_stats:=false;end
+   else if s='-na' then ansi:=false;
    i:=i+1;
   end;
  end;
-    
+
  inp:=paramstr(1);
  outp:=paramstr(2);
- 
+
  if not fileexists(inp) then begin
   writeln('Input file "',inp,'" not found!');
   exit;
@@ -289,6 +316,6 @@ end;
 //############################################################################//
 begin
  main;
-end. 
+end.
 //############################################################################//
 

@@ -5,9 +5,9 @@
 unit met_jpg;
 interface
 uses asys,bitop,bmp,huffman,dct;
-//############################################################################//  
+//############################################################################//
 procedure mj_dump_image(fn:string);
-procedure mj_dec_mcus(p:pbytea;len:integer;apd,pck_cnt,mcu_id:integer;q:byte);    
+procedure mj_dec_mcus(p:pbytea;len:integer;apd,pck_cnt,mcu_id:integer;q:byte);
 procedure mj_init;
 //############################################################################//
 const
@@ -16,26 +16,26 @@ OUT_SPLIT=2;
 OUT_BOTH =OUT_COMBO or OUT_SPLIT;
 //############################################################################//
 var
-red_apid:integer=68;
+red_apid:integer=66; //Used to be 68
 green_apid:integer=65;
 blue_apid:integer=64;
 output_mode:integer=OUT_COMBO;
 //############################################################################//
-implementation  
+implementation
 //############################################################################//
 const
 mcu_per_packet=14;
 mcu_per_line=196;
 //############################################################################//
 standard_quantization_table:array[0..63]of byte=(
-	16,  11,  10,  16,  24,  40,  51,  61,
-	12,  12,  14,  19,  26,  58,  60,  55,
-	14,  13,  16,  24,  40,  57,  69,  56,
-	14,  17,  22,  29,  51,  87,  80,  62,
-	18,  22,  37,  56,  68, 109, 103,  77,
-	24,  35,  55,  64,  81, 104, 113,  92,
-	49,  64,  78,  87, 103, 121, 120, 101,
-	72,  92,  95,  98, 112, 100, 103,  99
+ 16,  11,  10,  16,  24,  40,  51,  61,
+ 12,  12,  14,  19,  26,  58,  60,  55,
+ 14,  13,  16,  24,  40,  57,  69,  56,
+ 14,  17,  22,  29,  51,  87,  80,  62,
+ 18,  22,  37,  56,  68, 109, 103,  77,
+ 24,  35,  55,  64,  81, 104, 113,  92,
+ 49,  64,  78,  87, 103, 121, 120, 101,
+ 72,  92,  95,  98, 112, 100, 103,  99
 );
 
 zigzag:array[0..63]of byte=(
@@ -81,12 +81,12 @@ begin
  if (output_mode and OUT_COMBO)<>0 then storebmp32(fn+'.bmp',@big_img[0],8*mcu_per_line,cur_y+8,true,false);
 end;
 //############################################################################//
-procedure fill_dqt_by_q(const dqt:pinta;q:integer);   
+procedure fill_dqt_by_q(const dqt:pinta;q:integer);
 var f:single;
 i:integer;
 begin
  if (q>20)and(q<50) then f:=5000/q else f:=200-2*q;
-	for i:=0 to 63 do begin
+ for i:=0 to 63 do begin
   dqt[i]:=round(f/100*standard_quantization_table[i]);
   if dqt[i]<1 then dqt[i]:=1;
  end;
@@ -210,6 +210,5 @@ begin
 end;
 //############################################################################//
 begin
-end.       
+end.
 //############################################################################//
-

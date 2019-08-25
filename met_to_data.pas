@@ -53,7 +53,7 @@ type mtd_rec=record
 
  pos,prev_pos:integer;
  ecced_data:array[0..hard_frame_len-1]of byte;
-            
+
  word,cpos,corr,last_sync:dword;
  r:array[0..3]of integer;
  sig_q:integer;
@@ -100,7 +100,7 @@ begin
 
   fix_packet(@aligned[0],soft_frame_len,m.word);
  end;
-end; 
+end;
 //############################################################################//
 procedure do_next_correlate(var m:mtd_rec;raw,aligned:pbytea);
 begin
@@ -112,13 +112,13 @@ begin
  fix_packet(@aligned[0],soft_frame_len,m.word);
 end;
 //############################################################################//
-function try_frame(var m:mtd_rec;aligned:pbytea):boolean;  
+function try_frame(var m:mtd_rec;aligned:pbytea):boolean;
 var j:integer;
 decoded:array[0..hard_frame_len-1]of byte;
 ecc_buf:array[0..255-1]of byte;
-begin 
+begin
  stdt(dt_data);
- vit_decode(m.v,aligned,@decoded[0]);  
+ vit_decode(m.v,aligned,@decoded[0]);
  stat_vit:=stat_vit+rtdt(dt_data);
 
  m.last_sync:=pdword(@decoded[0])^;
@@ -148,9 +148,9 @@ var aligned:array[0..soft_frame_len-1]of byte;
 begin
  result:=false;
 
- if m.cpos=0 then begin      
+ if m.cpos=0 then begin
   stdt(dt_data);
-  do_next_correlate(m,raw,@aligned[0]); 
+  do_next_correlate(m,raw,@aligned[0]);
   stat_corr:=stat_corr+rtdt(dt_data);
 
   result:=try_frame(m,@aligned[0]);
@@ -170,11 +170,11 @@ begin
 
   result:=try_frame(m,@aligned[0]);
  end;
-end; 
+end;
 //############################################################################//
 begin
  dt_data:=getdt;
-end.     
+end.
 //############################################################################//
 
 

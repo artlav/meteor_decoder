@@ -9,12 +9,13 @@ uses asys,met_jpg;
 var
 md_debug:boolean=false;
 quiet:boolean=false;
+ansi:boolean=true;
 print_stats:boolean=true;
 time_file:boolean=false;
 
 no_time_yet:boolean=true;
 first_time,last_time:integer;
-//############################################################################//  
+//############################################################################//
 procedure parse_cvcdu(p:pbytea;len:integer);
 //############################################################################//
 implementation
@@ -37,7 +38,7 @@ begin
 
  last_time:=h*3600*1000+m*60*1000+s*1000+ms;
 
- if no_time_yet then begin  
+ if no_time_yet then begin
   no_time_yet:=false;
   first_time:=last_time;
  end;
@@ -129,12 +130,12 @@ begin
 
  data_len:=len-10;
  if frame_cnt=last_frame+1 then begin
-  if partial_packet then begin  
+  if partial_packet then begin
    if hdr_off=packet_full_mark then begin      //Packet could be larger than one frame
     hdr_off:=len-10;
     move(p[10],packet_buf[packet_off],hdr_off);
     packet_off:=packet_off+hdr_off;
-   end else begin                              
+   end else begin
     move(p[10],packet_buf[packet_off],hdr_off);
     n:=parse_partial(@packet_buf[0],packet_off+hdr_off);
    end;
@@ -162,6 +163,6 @@ begin
 end;
 //############################################################################//
 begin
-end. 
+end.
 //############################################################################//
 
