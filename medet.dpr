@@ -166,7 +166,7 @@ end;
 //############################################################################//
 // https://en.wikipedia.org/wiki/Burst_error-correcting_code#Convolutional_interleaver
 procedure deint_block(src,dst:pbytea;sz:integer);
-var i,pos:int64;
+var i,pos:integer;
 begin
  for i:=0 to sz-1 do begin
   pos:=i+(inter_branches-1)*inter_delay-(i mod inter_branches)*inter_base_len;
